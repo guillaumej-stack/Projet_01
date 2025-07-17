@@ -15,21 +15,22 @@ import asyncio
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-import praw
+import asyncpraw
 from openai import OpenAI
 from agents import Agent, Runner, function_tool, trace, WebSearchTool
+from agents_system import run_chat, ROUTER_AGENT, clear_conversation_history, get_conversation_history
 
 # Charger les variables d'environnement
 load_dotenv(override=True)
 
 # Configuration
-REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
-REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
+REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID") or ""
+REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET") or ""
 REDDIT_USER_AGENT = "RedditScraper/1.0"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Initialiser Reddit
-reddit = praw.Reddit(
+# Initialiser Reddit avec AsyncPRAW
+reddit = asyncpraw.Reddit(
     client_id=REDDIT_CLIENT_ID,
     client_secret=REDDIT_CLIENT_SECRET,
     user_agent=REDDIT_USER_AGENT
@@ -67,6 +68,7 @@ class AnalysisRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str = Field(..., description="Message de l'utilisateur")
+    session_id: Optional[str] = Field(default="default", description="ID de session pour l'historique")
 
 class ExportRequest(BaseModel):
     format_type: str = Field(default="pdf", description="Format d'export (pdf, json, csv)")
@@ -117,10 +119,13 @@ def init_solutions_database() -> Dict[str, str]:
         "error": result.get("error", "")
     }
 
-def _check_subreddit_exists(subreddit_name: str) -> Dict[str, Any]:
+async def _check_subreddit_exists(subreddit_name: str) -> Dict[str, Any]:
     """Vérifie si un subreddit existe et est accessible"""
     try:
-        subreddit = reddit.subreddit(subreddit_name)
+        subreddit = await reddit.subreddit(subreddit_name)
+        
+        # Charger les données du subreddit
+        await subreddit.load()
         
         # Tenter d'accéder aux informations du subreddit
         title = subreddit.display_name
@@ -160,9 +165,9 @@ def _check_subreddit_exists(subreddit_name: str) -> Dict[str, Any]:
             }
 
 @function_tool
-def check_subreddit_exists(subreddit_name: str) -> Dict[str, Any]:
+async def check_subreddit_exists(subreddit_name: str) -> Dict[str, Any]:
     """Version pour les agents - Vérifie si un subreddit existe et est accessible"""
-    return _check_subreddit_exists(subreddit_name)
+    return await _check_subreddit_exists(subreddit_name)
 
 def _get_stored_solutions(subreddit: Optional[str] = None, limit: int = 10) -> Dict[str, Any]:
     """Récupère les solutions stockées en base"""
@@ -234,7 +239,7 @@ async def root():
 async def check_subreddit_endpoint(request: SubredditCheckRequest):
     """Vérifie si un subreddit existe et est accessible"""
     try:
-        result = _check_subreddit_exists(request.subreddit_name)
+        result = await _check_subreddit_exists(request.subreddit_name)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -244,7 +249,7 @@ async def analyze_subreddit_endpoint(request: AnalysisRequest):
     """Analyse un subreddit (endpoint simplifié - à connecter avec vos agents)"""
     try:
         # Vérifier d'abord si le subreddit existe
-        check_result = _check_subreddit_exists(request.subreddit_name)
+        check_result = await _check_subreddit_exists(request.subreddit_name)
         if not check_result["success"]:
             raise HTTPException(status_code=404, detail=check_result["error"])
         
@@ -267,53 +272,105 @@ async def analyze_subreddit_endpoint(request: AnalysisRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+async def simple_chat_response(message: str) -> str:
+    """Version simplifiée du chat qui traite directement les messages"""
+    message = message.strip().lower()
+    
+    # Détecter si c'est un nom de subreddit
+    if message.startswith("r/"):
+        subreddit_name = message[2:]
+    elif message.startswith("/r/"):
+        subreddit_name = message[3:]
+    else:
+        # Supposer que c'est un nom de subreddit direct
+        subreddit_name = message
+    
+    # Vérifier si le subreddit existe
+    check_result = await _check_subreddit_exists(subreddit_name)
+    
+    if not check_result["success"]:
+        return f"❌ Erreur: Le subreddit 'r/{subreddit_name}' n'existe pas ou est inaccessible.\nErreur: {check_result.get('error', 'Unknown')}"
+    
+    # Subreddit existe, lancer l'analyse simple
+    try:
+        subreddit = await reddit.subreddit(subreddit_name)
+        posts_data = []
+        
+        async for post in subreddit.top(limit=5, time_filter="month"):
+            posts_data.append({
+                "title": post.title,
+                "score": post.score,
+                "num_comments": post.num_comments,
+                "author": str(post.author) if post.author else "[deleted]",
+                "url": f"https://reddit.com{post.permalink}",
+                "selftext": post.selftext[:500] + "..." if len(post.selftext) > 500 else post.selftext,
+            })
+        
+        # Générer la réponse
+        response = f"""✅ Analyse du subreddit r/{subreddit_name} terminée !
+
+📊 **Statistiques du subreddit:**
+- Titre: {check_result['title']}
+- Abonnés: {check_result['subscribers']:,}
+- Description: {check_result['description']}
+
+📋 **Posts analysés:** {len(posts_data)} posts récupérés
+
+🔝 **Top posts récents:**"""
+        
+        for i, post in enumerate(posts_data[:3], 1):
+            response += f"""
+{i}. **{post['title']}**
+   - Score: {post['score']}, Commentaires: {post['num_comments']}
+   - Auteur: {post['author']}"""
+        
+        response += f"""
+
+💡 **Prochaines étapes:**
+- Analyser les douleurs des utilisateurs
+- Identifier les solutions proposées
+- Générer des recommandations business
+
+L'analyse complète sera disponible prochainement !"""
+        
+        return response
+        
+    except Exception as e:
+        return f"❌ Erreur lors de l'analyse: {str(e)}"
+
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
-    """Endpoint de chat avec l'assistant"""
+    """Endpoint de chat avec l'assistant - Utilise le système d'agents avec historique (sans tracing)"""
     try:
-        # TODO: Intégrer ici votre RouterAgent du notebook
-        # Pour l'instant, logique simplifiée
+        # Utiliser le système d'agents original avec historique
+        session_id = request.session_id or "default"
+        response = await run_chat(request.message, session_id)
         
-        message = request.message.lower()
-        
-        if "analyser" in message or "analyse" in message:
-            # Extraire le nom du subreddit
+        # Analyser la réponse pour détecter des données structurées
+        analysis_results = None
+        if "r/" in response and ("trouvé" in response or "analysé" in response):
+            # Extraire le nom du subreddit de la réponse
             import re
-            subreddit_match = re.search(r'r/([a-zA-Z0-9_]+)', message)
+            subreddit_match = re.search(r'r/([a-zA-Z0-9_]+)', response)
             if subreddit_match:
                 subreddit_name = subreddit_match.group(1)
-                
-                # Vérifier le subreddit
-                check_result = _check_subreddit_exists(subreddit_name)
-                if check_result["success"]:
-                    return {
-                        "success": True,
-                        "response": f"✅ Subreddit r/{subreddit_name} trouvé ! Je lance l'analyse...",
-                        "analysis_results": {
-                            "subreddit": subreddit_name,
-                            "subscribers": check_result.get("subscribers", 0),
-                            "status": "ready_for_analysis"
-                        }
-                    }
-                else:
-                    return {
-                        "success": False,
-                        "response": f"❌ {check_result['error']}"
-                    }
-            else:
-                return {
-                    "success": True,
-                    "response": "Je peux analyser un subreddit ! Utilisez le format : 'analyser r/nom_du_subreddit'"
+                analysis_results = {
+                    "subreddit": subreddit_name,
+                    "status": "analysis_started"
                 }
         
-        # Réponse générique
         return {
             "success": True,
-            "response": "Je suis votre assistant d'analyse Reddit. Demandez-moi d'analyser un subreddit avec : 'analyser r/nom_du_subreddit'"
+            "response": response,
+            "analysis_results": analysis_results,
+            "session_id": session_id
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {
+            "success": False,
+            "response": f"❌ Erreur: {str(e)}"
+        }
 
 @app.get("/stored_solutions")
 async def get_stored_solutions_endpoint(subreddit: Optional[str] = None, limit: int = 10):
@@ -333,6 +390,32 @@ async def export_results_endpoint(request: ExportRequest):
             "success": True,
             "message": f"Export en format {request.format_type} préparé",
             "format": request.format_type
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/chat/clear_history")
+async def clear_chat_history(session_id: str = "default"):
+    """Nettoie l'historique d'une session de chat"""
+    try:
+        clear_conversation_history(session_id)
+        return {
+            "success": True,
+            "message": f"Historique de la session '{session_id}' nettoyé"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chat/history")
+async def get_chat_history(session_id: str = "default"):
+    """Récupère l'historique d'une session de chat"""
+    try:
+        history = get_conversation_history(session_id)
+        return {
+            "success": True,
+            "session_id": session_id,
+            "history": history,
+            "count": len(history)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
