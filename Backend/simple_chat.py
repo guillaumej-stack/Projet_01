@@ -17,21 +17,23 @@ REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID") or ""
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET") or ""
 REDDIT_USER_AGENT = "RedditScraper/1.0"
 
-# Initialiser Reddit avec AsyncPRAW
-reddit = asyncpraw.Reddit(
-    client_id=REDDIT_CLIENT_ID,
-    client_secret=REDDIT_CLIENT_SECRET,
-    user_agent=REDDIT_USER_AGENT
-)
+async def get_reddit_instance():
+    """Créer une instance Reddit avec AsyncPRAW dans un contexte async"""
+    return asyncpraw.Reddit(
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
+        user_agent=REDDIT_USER_AGENT
+    )
 
 async def simple_check_subreddit(subreddit_name: str) -> Dict[str, Any]:
     """Version simplifiée de check_subreddit_exists"""
+    reddit = await get_reddit_instance()
     try:
         subreddit = await reddit.subreddit(subreddit_name)
         await subreddit.load()
         
         description = subreddit.public_description
-        return {
+        result = {
             "exists": True,
             "subreddit": subreddit_name,
             "subscribers": subreddit.subscribers,
@@ -39,7 +41,10 @@ async def simple_check_subreddit(subreddit_name: str) -> Dict[str, Any]:
             "title": subreddit.title,
             "url": f"https://reddit.com/r/{subreddit_name}"
         }
+        await reddit.close()
+        return result
     except Exception as e:
+        await reddit.close()
         return {
             "exists": False,
             "subreddit": subreddit_name,
@@ -48,6 +53,7 @@ async def simple_check_subreddit(subreddit_name: str) -> Dict[str, Any]:
 
 async def simple_scrape_posts(subreddit_name: str, num_posts: int = 5) -> Dict[str, Any]:
     """Version simplifiée de scrape_subreddit_posts"""
+    reddit = await get_reddit_instance()
     try:
         subreddit = await reddit.subreddit(subreddit_name)
         posts_data = []
@@ -62,14 +68,17 @@ async def simple_scrape_posts(subreddit_name: str, num_posts: int = 5) -> Dict[s
                 "selftext": post.selftext[:500] + "..." if len(post.selftext) > 500 else post.selftext,
             })
         
-        return {
+        result = {
             "success": True,
             "subreddit": subreddit_name,
             "posts_count": len(posts_data),
             "posts": posts_data
         }
+        await reddit.close()
+        return result
         
     except Exception as e:
+        await reddit.close()
         return {
             "success": False,
             "error": str(e),
@@ -146,9 +155,6 @@ async def test_simple_chat():
     response = await simple_chat_response(test_message)
     print(f"\n🤖 Réponse:")
     print(response)
-    
-    # Fermer la session Reddit
-    await reddit.close()
 
 if __name__ == "__main__":
     asyncio.run(test_simple_chat()) 
