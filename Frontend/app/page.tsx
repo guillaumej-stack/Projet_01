@@ -45,81 +45,62 @@ Quel subreddit souhaitez-vous analyser ?`
 
   const handleClearHistory = async () => {
     try {
-      await redditAPI.clearChatHistory(sessionId)
-      clearMessages()
-      welcomeMessageAdded.current = false // Réinitialise le flag pour le message de bienvenue
-      toast.success('Historique nettoyé')
+      const response = await redditAPI.clearChatHistory(sessionId)
+      if (response.success) {
+        clearMessages()
+        welcomeMessageAdded.current = false // Réinitialise le flag pour le message de bienvenue
+        toast.success(response.message || 'Historique nettoyé')
+      } else {
+        toast.error('Erreur lors du nettoyage de l\'historique')
+      }
     } catch (error) {
       console.error('Erreur lors du nettoyage:', error)
       toast.error('Erreur lors du nettoyage de l\'historique')
     }
   }
 
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim() || isProcessing) return
 
-    // Ajouter le message utilisateur
-    addMessage({ role: 'user', content })
-    setIsProcessing(true)
-    setTyping(true)
 
-    try {
-      // Appel réel à l'API FastAPI avec sessionId
-      const response = await redditAPI.sendChatMessage(content, sessionId)
+
+const handleSendMessage = async (content: string) => {
+  if (!content.trim() || isProcessing) return
+
+  addMessage({ role: 'user', content })
+  setIsProcessing(true)
+  setTyping(true)
+
+  try {
+    // Appel direct à l'API FastAPI backend
+    const response = await redditAPI.sendChatMessage(content, sessionId)
+    
+    if (response.success) {
+      addMessage({ role: 'assistant', content: response.response })
       
-      if (response.success) {
-        // Ajouter la réponse de l'assistant
-        addMessage({ role: 'assistant', content: response.response })
-        
-        // Si c'est une analyse, traiter les résultats
-        if (response.analysis_results) {
-          setAnalyzing(true)
-          setTimeout(() => {
-            setAnalysisResults(response.analysis_results)
-            setAnalyzing(false)
-          }, 2000)
-        }
-      } else {
-        addMessage({ 
-          role: 'assistant', 
-          content: `❌ ${response.response}` 
-        })
+      // Vérifier si le message contient des mots-clés d'analyse pour déclencher l'affichage des résultats
+      if (content.toLowerCase().includes('analyse') || content.toLowerCase().includes('analyser')) {
+        // Optionnel : déclencher une analyse séparée si nécessaire
+        // Cette logique peut être ajustée selon vos besoins
       }
-      
-    } catch (error) {
-      console.error('Erreur:', error)
+    } else {
       addMessage({ 
         role: 'assistant', 
-        content: '❌ Erreur de connexion au serveur. Vérifiez que l\'API est en cours d\'exécution.' 
+        content: `❌ Erreur: ${response.response}` 
       })
-      toast.error('Erreur de connexion au serveur')
-    } finally {
-      setIsProcessing(false)
-      setTyping(false)
     }
+    
+  } catch (error) {
+    console.error('Erreur:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Erreur de connexion au serveur'
+    addMessage({ 
+      role: 'assistant', 
+      content: `❌ ${errorMessage}` 
+    })
+    toast.error('Erreur de connexion au serveur')
+  } finally {
+    setIsProcessing(false)
+    setTyping(false)
   }
-
-  const simulateBackendResponse = async (message: string): Promise<string> => {
-    // Simulation de réponse - à remplacer par votre API
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    if (message.toLowerCase().includes('bonjour') || message.toLowerCase().includes('salut')) {
-      return 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?'
-    }
-    
-    if (message.toLowerCase().includes('aide') || message.toLowerCase().includes('help')) {
-      return `Je peux vous aider à analyser n'importe quel subreddit. Voici ce que je fais :
-
-1. **Scraping intelligent** : Je récupère les posts et commentaires les plus pertinents
-2. **Analyse des douleurs** : J'identifie les problèmes récurrents des utilisateurs
-3. **Détection de solutions** : Je trouve les commentaires proposant des solutions
-4. **Recommandations business** : Je génère des opportunités commerciales
-
-Dites-moi simplement quel subreddit vous voulez analyser !`
-    }
-    
-    return 'Je comprends votre demande. Pouvez-vous me donner plus de détails sur ce que vous souhaitez analyser ?'
-  }
+}
 
   const handleAnalysis = async (message: string) => {
     setAnalyzing(true)
@@ -178,9 +159,19 @@ Dites-moi simplement quel subreddit vous voulez analyser !`
   const handleExport = async (format: 'pdf' | 'csv' | 'txt') => {
     try {
       toast.loading(`Export en cours (${format.toUpperCase()})...`)
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      toast.success(`✅ Export ${format.toUpperCase()} terminé !`)
+      
+      const subreddit = state.analysisResults?.subreddit
+      const response = await redditAPI.exportResults(format, subreddit)
+      
+      if (response.success) {
+        toast.success(`✅ Export ${format.toUpperCase()} terminé !`)
+        // Vous pouvez ajouter ici la logique pour télécharger le fichier
+        // si votre backend retourne un lien de téléchargement
+      } else {
+        toast.error(`❌ Erreur lors de l'export: ${response.response}`)
+      }
     } catch (error) {
+      console.error('Erreur export:', error)
       toast.error('❌ Erreur lors de l\'export')
     }
   }

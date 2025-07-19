@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 // Client API avec configuration
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 10000000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -20,87 +20,57 @@ apiClient.interceptors.response.use(
   }
 )
 
-// Types pour les réponses API
-export interface SubredditInfo {
-  success: boolean
-  exists: boolean
-  subreddit: string
-  title?: string
-  subscribers?: number
-  description?: string
-  error?: string
-}
-
-export interface AnalysisResult {
-  success: boolean
-  message: string
-  data?: {
-    subreddit: string
-    posts_to_analyze: number
-    comments_limit: number
-    sort_criteria: string
-    status: string
-  }
-}
-
+// Types pour les réponses API (alignés avec le backend FastAPI)
 export interface ChatResponse {
   success: boolean
   response: string
-  session_id?: string
-  analysis_results?: {
-    subreddit: string
-    subscribers: number
-    status: string
+  session_id: string
+}
+
+export interface HealthResponse {
+  status: string
+  agents: string
+  database: string
+}
+
+export interface SubredditCheckResponse {
+  success: boolean
+  response: string
+  subreddit: string
+}
+
+export interface AnalysisResponse {
+  success: boolean
+  response: string
+  subreddit: string
+  parameters: {
+    num_posts: number
+    comments_limit: number
+    sort_criteria: string
+    time_filter: string
   }
 }
 
-export interface StoredSolution {
-  id: number
-  comment_id: string
-  post_id: string
-  author: string
-  solution_text: string
-  score: number
-  pain_type: string
-  intensity: number
-  subreddit: string
-  created_at: string
-}
-
-export interface StoredSolutionsResponse {
+export interface ExportResponse {
   success: boolean
-  solutions: StoredSolution[]
-  count: number
-  error?: string
+  response: string
+  format: string
 }
 
-// API Functions
+export interface ClearHistoryResponse {
+  success: boolean
+  message: string
+}
+
+// API Functions alignées avec le backend FastAPI
 export const redditAPI = {
-  // Vérifier si un subreddit existe
-  async checkSubreddit(subredditName: string): Promise<SubredditInfo> {
-    const response: AxiosResponse<SubredditInfo> = await apiClient.post('/check_subreddit', {
-      subreddit_name: subredditName
-    })
+  // Vérifier l'état de l'API
+  async healthCheck(): Promise<HealthResponse> {
+    const response: AxiosResponse<HealthResponse> = await apiClient.get('/health')
     return response.data
   },
 
-  // Analyser un subreddit
-  async analyzeSubreddit(
-    subredditName: string, 
-    numPosts: number = 10, 
-    commentsLimit: number = 10,
-    sortCriteria: string = 'top'
-  ): Promise<AnalysisResult> {
-    const response: AxiosResponse<AnalysisResult> = await apiClient.post('/analyze_subreddit', {
-      subreddit_name: subredditName,
-      num_posts: numPosts,
-      comments_limit: commentsLimit,
-      sort_criteria: sortCriteria
-    })
-    return response.data
-  },
-
-  // Chat avec l'assistant
+  // Chat avec l'assistant (endpoint principal)
   async sendChatMessage(message: string, sessionId?: string): Promise<ChatResponse> {
     const response: AxiosResponse<ChatResponse> = await apiClient.post('/chat', {
       message: message,
@@ -109,43 +79,48 @@ export const redditAPI = {
     return response.data
   },
 
-  // Nettoyer l'historique de conversation
-  async clearChatHistory(sessionId?: string): Promise<any> {
-    const response = await apiClient.post('/chat/clear_history', {}, {
-      params: { session_id: sessionId || 'default' }
+  // Vérifier si un subreddit existe
+  async checkSubreddit(subredditName: string): Promise<SubredditCheckResponse> {
+    const response: AxiosResponse<SubredditCheckResponse> = await apiClient.post('/check_subreddit', {
+      subreddit_name: subredditName
     })
     return response.data
   },
 
-  // Récupérer l'historique de conversation
-  async getChatHistory(sessionId?: string): Promise<any> {
-    const response = await apiClient.get('/chat/history', {
-      params: { session_id: sessionId || 'default' }
+  // Analyser un subreddit
+  async analyzeSubreddit(
+    subredditName: string, 
+    numPosts: number = 5, 
+    commentsLimit: number = 5,
+    sortCriteria: string = 'top',
+    timeFilter: string = 'month'
+  ): Promise<AnalysisResponse> {
+    const response: AxiosResponse<AnalysisResponse> = await apiClient.post('/analyze', {
+      subreddit_name: subredditName,
+      num_posts: numPosts,
+      comments_limit: commentsLimit,
+      sort_criteria: sortCriteria,
+      time_filter: timeFilter
     })
-    return response.data
-  },
-
-  // Récupérer les solutions stockées
-  async getStoredSolutions(subreddit?: string, limit: number = 10): Promise<StoredSolutionsResponse> {
-    const params = new URLSearchParams()
-    if (subreddit) params.append('subreddit', subreddit)
-    params.append('limit', limit.toString())
-    
-    const response: AxiosResponse<StoredSolutionsResponse> = await apiClient.get(`/stored_solutions?${params}`)
     return response.data
   },
 
   // Export des résultats
-  async exportResults(format: string = 'pdf'): Promise<any> {
-    const response = await apiClient.post('/export_results', {
-      format_type: format
+  async exportResults(formatType: string = 'pdf', subreddit?: string): Promise<ExportResponse> {
+    const response: AxiosResponse<ExportResponse> = await apiClient.post('/export', {
+      format_type: formatType,
+      subreddit: subreddit
     })
     return response.data
   },
 
-  // Vérifier l'état de l'API
-  async healthCheck(): Promise<any> {
-    const response = await apiClient.get('/')
+  // Nettoyer l'historique de conversation
+  async clearChatHistory(sessionId?: string): Promise<ClearHistoryResponse> {
+    const response: AxiosResponse<ClearHistoryResponse> = await apiClient.delete('/clear_history', {
+      data: {
+        session_id: sessionId || 'default'
+      }
+    })
     return response.data
   }
 }
