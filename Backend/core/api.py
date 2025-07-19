@@ -53,6 +53,9 @@ class ExportRequest(BaseModel):
     format_type: str = "pdf"
     subreddit: Optional[str] = None
 
+class ClearHistoryRequest(BaseModel):
+    session_id: str
+
 
 # ===== ENDPOINTS PRINCIPAUX =====
 
@@ -125,7 +128,10 @@ async def analyze_endpoint(request: AnalysisRequest):
     """
     try:
         # Construire le message pour l'agent
-        message = f"Analyse le subreddit r/{request.subreddit_name} avec {request.num_posts} posts, {request.comments_limit} commentaires par post, critère {request.sort_criteria}, période {request.time_filter}"
+        message = f"""Analyse le subreddit r/{request.subreddit_name} avec {request.num_posts} posts, 
+        {request.comments_limit} commentaires par post, critère {request.sort_criteria}, période {request.time_filter}
+        Je confirme bien que je suis sûr et je valide les paramètres.
+        """
         
         result = await run_chat(message, f"analysis_{request.subreddit_name}")
         
@@ -167,18 +173,18 @@ async def export_endpoint(request: ExportRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/clear_history")
-async def clear_history_endpoint(session_id: str = "default"):
+async def clear_history_endpoint(request: ClearHistoryRequest):
     """
     Efface l'historique de conversation
     """
     try:
-        clear_conversation_history(session_id)
+        clear_conversation_history(request.session_id)
         return {
             "success": True,
-            "message": f"Historique effacé pour la session {session_id}"
+            "message": f"Historique effacé pour la session {request.session_id}"
         }
         
-    except Exception as e:
+    except Exception as e: 
         raise HTTPException(status_code=500, detail=str(e))
 
 

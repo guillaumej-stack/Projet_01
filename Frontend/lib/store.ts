@@ -18,9 +18,11 @@ export interface AnalysisState {
 interface ChatStore {
   messages: Message[]
   isTyping: boolean
+  sessionId: string
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void
   setTyping: (isTyping: boolean) => void
   clearMessages: () => void
+  setSessionId: (sessionId: string) => void
 }
 
 interface AnalysisStore {
@@ -35,6 +37,7 @@ interface AnalysisStore {
 export const useChatStore = create<ChatStore>((set) => ({
   messages: [],
   isTyping: false,
+  sessionId: 'default',
   addMessage: (message) =>
     set((state) => ({
       messages: [
@@ -48,6 +51,7 @@ export const useChatStore = create<ChatStore>((set) => ({
     })),
   setTyping: (isTyping) => set({ isTyping }),
   clearMessages: () => set({ messages: [] }),
+  setSessionId: (sessionId) => set({ sessionId }),
 }))
 
 export const useAnalysisStore = create<AnalysisStore>((set) => ({

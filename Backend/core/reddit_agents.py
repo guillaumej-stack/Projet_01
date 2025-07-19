@@ -6,10 +6,7 @@ from functions import (
     scrape_subreddit_posts,
     calculate_pain_score,
     store_exceptional_solution,
-    get_stored_solutions,
-    export_final_report,
-    export_exceptional_solutions,
-    export_both_reports
+    get_stored_solutions
 )
 
 # Agent 0 - RouterAgent
@@ -19,10 +16,7 @@ agent_0 = Agent(
     tools=[
         WebSearchTool(),
         check_subreddit_exists,
-        get_stored_solutions,
-        export_final_report,
-        export_exceptional_solutions,
-        export_both_reports
+        get_stored_solutions
     ], 
     model="gpt-4o-mini"
 )
@@ -150,6 +144,7 @@ def clear_conversation_history(session_id: str):
     """
     try:
         supabase.table("conversation_history").delete().eq("session_id", session_id).execute()
+        print(f"Historique effacé pour session {session_id}")
         
     except Exception as e:
         print(f"Erreur nettoyage historique: {e}")

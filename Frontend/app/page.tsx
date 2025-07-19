@@ -15,10 +15,11 @@ import {
 import toast from 'react-hot-toast'
 
 export default function Home() {
-  const { messages, addMessage, setTyping, clearMessages } = useChatStore()
+  const { messages, addMessage, setTyping, clearMessages, sessionId } = useChatStore()
   const { state, setAnalyzing, setAnalysisResults, setRecommendations } = useAnalysisStore()
   const [isProcessing, setIsProcessing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const welcomeMessageAdded = useRef(false)
 
   // Auto-scroll vers le bas
   const scrollToBottom = () => {
@@ -29,9 +30,10 @@ export default function Home() {
     scrollToBottom()
   }, [messages])
 
-  // Message de bienvenue
+  // Message de bienvenue - s'exécute une seule fois
   useEffect(() => {
-    if (messages.length === 0) {
+    if (messages.length === 0 && !welcomeMessageAdded.current) {
+      welcomeMessageAdded.current = true
       addMessage({
         role: 'assistant',
         content: `Bonjour ! Je suis votre assistant d'analyse Reddit. Je peux analyser n'importe quel subreddit pour identifier les problèmes récurrents des utilisateurs et vous proposer des opportunités business.
@@ -39,7 +41,19 @@ export default function Home() {
 Quel subreddit souhaitez-vous analyser ?`
       })
     }
-  }, [messages.length, addMessage])
+  }, [messages.length])
+
+  const handleClearHistory = async () => {
+    try {
+      await redditAPI.clearChatHistory(sessionId)
+      clearMessages()
+      welcomeMessageAdded.current = false // Réinitialise le flag pour le message de bienvenue
+      toast.success('Historique nettoyé')
+    } catch (error) {
+      console.error('Erreur lors du nettoyage:', error)
+      toast.error('Erreur lors du nettoyage de l\'historique')
+    }
+  }
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim() || isProcessing) return
@@ -50,8 +64,8 @@ Quel subreddit souhaitez-vous analyser ?`
     setTyping(true)
 
     try {
-      // Appel réel à l'API FastAPI
-      const response = await redditAPI.sendChatMessage(content)
+      // Appel réel à l'API FastAPI avec sessionId
+      const response = await redditAPI.sendChatMessage(content, sessionId)
       
       if (response.success) {
         // Ajouter la réponse de l'assistant
@@ -175,6 +189,7 @@ Dites-moi simplement quel subreddit vous voulez analyser !`
     clearMessages()
     setAnalysisResults(null)
     setRecommendations(null)
+    welcomeMessageAdded.current = false // Réinitialise le flag pour le message de bienvenue
     toast.success('Chat effacé')
   }
 
@@ -183,31 +198,92 @@ Dites-moi simplement quel subreddit vous voulez analyser !`
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-center h-16">
+            {/* Titre centré */}
             <div className="flex items-center gap-3">
               <CpuChipIcon className="w-8 h-8 text-reddit-600" />
               <h1 className="text-xl font-bold text-gray-900">
-                Reddit Agents
+                Reddit Analysis
               </h1>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleClearChat}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <ArrowPathIcon className="w-4 h-4" />
-                Nouveau chat
-              </button>
             </div>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Chat Section */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Menu Section - Gauche */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8">
+              <div className="card">
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Actions
+                  </h3>
+                  
+                  {/* Bouton Nouveau Chat */}
+                  <button
+                    onClick={handleClearHistory}
+                    className="w-full btn-secondary flex items-center gap-2 justify-center mb-3"
+                  >
+                    <ArrowPathIcon className="w-4 h-4" />
+                    Nouveau chat
+                  </button>
+                  
+                  {/* Boutons Export */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Exporter les résultats
+                    </h4>
+                    
+                    <button
+                      onClick={() => handleExport('pdf')}
+                      className="w-full btn-outline flex items-center gap-2 justify-center"
+                      disabled={!state.analysisResults}
+                    >
+                      <DocumentTextIcon className="w-4 h-4" />
+                      Export PDF
+                    </button>
+                    
+                    <button
+                      onClick={() => handleExport('csv')}
+                      className="w-full btn-outline flex items-center gap-2 justify-center"
+                      disabled={!state.analysisResults}
+                    >
+                      <DocumentTextIcon className="w-4 h-4" />
+                      Export CSV
+                    </button>
+                    
+                    <button
+                      onClick={() => handleExport('txt')}
+                      className="w-full btn-outline flex items-center gap-2 justify-center"
+                      disabled={!state.analysisResults}
+                    >
+                      <DocumentTextIcon className="w-4 h-4" />
+                      Export TXT
+                    </button>
+                  </div>
+                  
+                  {/* Résultats d'analyse compacts */}
+                  {state.analysisResults && (
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Dernière analyse
+                      </h4>
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <p>Subreddit: r/{state.analysisResults.subreddit}</p>
+                        <p>Posts: {state.analysisResults.posts_analyzed}</p>
+                        <p>Commentaires: {state.analysisResults.total_comments_analyzed}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Chat Section - Droite (3/4) */}
+          <div className="lg:col-span-3">
             <div className="card h-[600px] flex flex-col">
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((message) => (
@@ -230,30 +306,6 @@ Dites-moi simplement quel subreddit vous voulez analyser !`
                   placeholder="Tapez votre message ou dites-moi quel subreddit analyser..."
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Results Section */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              {state.analysisResults ? (
-                <AnalysisResults
-                  results={state.analysisResults}
-                  onExport={handleExport}
-                />
-              ) : (
-                <div className="card">
-                  <div className="text-center text-gray-500">
-                    <DocumentTextIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium mb-2">
-                      Aucune analyse
-                    </h3>
-                    <p className="text-sm">
-                      Lancez une analyse pour voir les résultats ici
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

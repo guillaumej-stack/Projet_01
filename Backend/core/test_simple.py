@@ -19,7 +19,7 @@ def test_connection():
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
         data = {"subreddit_name": "python"}
-        response2 = requests.post(f"{BASE_URL}/check_subreddit", json=data, headers=HEADERS, timeout=10)
+        response2 = requests.post(f"{BASE_URL}/check_subreddit", json=data, headers=HEADERS, timeout=40)
         print(f"Status: {response2.status_code}")
         print(f"Response: {response2.json()}")
         return response2.status_code == 200

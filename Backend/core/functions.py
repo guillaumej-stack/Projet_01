@@ -345,183 +345,181 @@ def get_stored_solutions(subreddit: str = None) -> str:
         return json.dumps(error_result)
 
 
-class FlexibleDict(BaseModel):
-    class Config:
-        extra = "allow"
-        
-    def dict(self, **kwargs):
-        return super().dict(**kwargs)
+# class FlexibleDict(BaseModel):
+#     class Config:
+#         extra = "allow"
+#         
+#     def dict(self, **kwargs):
+#         return super().dict(**kwargs)
 
-@function_tool
-def export_final_report(
-    analysis_data: FlexibleDict, 
-    recommendations_data: FlexibleDict, 
-    format_type: str = "pdf"
-) -> str:
-    """
-    Exporte le rapport final d'analyse
-    
-    Args:
-        analysis_data: Données d'analyse
-        recommendations_data: Données de recommandations
-        format_type: Format d'export (pdf, json, csv)
-    
-    Returns:
-        Chaîne JSON avec le chemin du fichier exporté
-    """
-    try:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Convertir en dict pour compatibilité avec votre code existant
-        analysis_dict = analysis_data.dict() if hasattr(analysis_data, 'dict') else analysis_data
-        recommendations_dict = recommendations_data.dict() if hasattr(recommendations_data, 'dict') else recommendations_data
-        
-        subreddit = analysis_dict.get("subreddit", "unknown")
-        
-        # Créer le dossier exports s'il n'existe pas
-        Path("exports").mkdir(exist_ok=True)
-        
-        if format_type == "json":
-            filepath = f"exports/rapport_{subreddit}_{timestamp}.json"
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump({
-                    "analysis": analysis_dict,
-                    "recommendations": recommendations_dict,
-                    "exported_at": timestamp
-                }, f, ensure_ascii=False, indent=2)
-        
-        elif format_type == "txt":
-            filepath = f"exports/rapport_{subreddit}_{timestamp}.txt"
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(f"RAPPORT D'ANALYSE - r/{subreddit}\n")
-                f.write(f"Généré le: {timestamp}\n\n")
-                f.write("ANALYSE DES DOULEURS:\n")
-                f.write(json.dumps(analysis_dict, ensure_ascii=False, indent=2))
-                f.write("\n\nRECOMANDATIONS:\n")
-                f.write(json.dumps(recommendations_dict, ensure_ascii=False, indent=2))
-        
-        else:  # PDF par défaut
-            filepath = f"exports/rapport_{subreddit}_{timestamp}.pdf"
-            # Simuler l'export PDF (comme dans Version_00)
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(f"RAPPORT PDF - r/{subreddit} - {timestamp}")
-        
-        return json.dumps({
-            "success": True,
-            "filepath": filepath,
-            "format": format_type,
-            "message": f"✅ Rapport exporté: {filepath}"
-        })
-        
-    except Exception as e:
-        return json.dumps({
-            "success": False,
-            "error": str(e)
-        })
+# @function_tool
+# def export_final_report(
+#     analysis_data: FlexibleDict, 
+#     recommendations_data: FlexibleDict, 
+#     format_type: str = "pdf"
+# ) -> str:
+#     """
+#     Exporte le rapport final d'analyse
+#     
+#     Args:
+#         analysis_data: Données d'analyse
+#         recommendations_data: Données de recommandations
+#         format_type: Format d'export (pdf, json, csv)
+#     
+#     Returns:
+#         Chaîne JSON avec le chemin du fichier exporté
+#     """
+#     try:
+#         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#         
+#         # Convertir en dict pour compatibilité avec votre code existant
+#         analysis_dict = analysis_data.dict() if hasattr(analysis_data, 'dict') else analysis_data
+#         recommendations_dict = recommendations_data.dict() if hasattr(recommendations_data, 'dict') else recommendations_data
+#         
+#         subreddit = analysis_dict.get("subreddit", "unknown")
+#         
+#         # Créer le dossier exports s'il n'existe pas
+#         Path("exports").mkdir(exist_ok=True)
+#         
+#         if format_type == "json":
+#             filepath = f"exports/rapport_{subreddit}_{timestamp}.json"
+#             with open(filepath, 'w', encoding='utf-8') as f:
+#                 json.dump({
+#                     "analysis": analysis_dict,
+#                     "recommendations": recommendations_dict,
+#                     "exported_at": timestamp
+#                 }, f, ensure_ascii=False, indent=2)
+#         
+#         elif format_type == "txt":
+#             filepath = f"exports/rapport_{subreddit}_{timestamp}.txt"
+#             with open(filepath, 'w', encoding='utf-8') as f:
+#                 f.write(f"RAPPORT D'ANALYSE - r/{subreddit}\n")
+#                 f.write(f"Généré le: {timestamp}\n\n")
+#                 f.write("ANALYSE DES DOULEURS:\n")
+#                 f.write(json.dumps(analysis_dict, ensure_ascii=False, indent=2))
+#                 f.write("\n\nRECOMANDATIONS:\n")
+#                 f.write(json.dumps(recommendations_dict, ensure_ascii=False, indent=2))
+#         
+#         else:  # PDF par défaut
+#             filepath = f"exports/rapport_{subreddit}_{timestamp}.pdf"
+#             # Simuler l'export PDF (comme dans Version_00)
+#             with open(filepath, 'w', encoding='utf-8') as f:
+#                 f.write(f"RAPPORT PDF - r/{subreddit} - {timestamp}")
+#         
+#         return json.dumps({
+#             "success": True,
+#             "filepath": filepath,
+#             "format": format_type,
+#             "message": f"✅ Rapport exporté: {filepath}"
+#         })
+#         
+#     except Exception as e:
+#         return json.dumps({
+#             "success": False,
+#             "error": str(e)
+#         })
 
         
-@function_tool
-def export_exceptional_solutions(subreddit: str, format_type: str = "csv") -> str:
-    """
-    Exporte les solutions exceptionnelles d'un subreddit
-    (Exact de Version_00)
-    
-    Args:
-        subreddit: Nom du subreddit
-        format_type: Format d'export (csv, json, txt)
-    
-    Returns:
-        Chaîne JSON avec le chemin du fichier exporté
-    """
-    try:
-        # Récupérer les solutions
-        solutions_data_json = get_stored_solutions(subreddit)
-        solutions_data = json.loads(solutions_data_json)
-        
-        if not solutions_data["success"]:
-            return solutions_data_json
-        
-        solutions = solutions_data["solutions"]
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Créer le dossier exports s'il n'existe pas
-        Path("exports").mkdir(exist_ok=True)
-        
-        if format_type == "json":
-            filepath = f"exports/solutions_{subreddit}_{timestamp}.json"
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(solutions, f, ensure_ascii=False, indent=2)
-        
-        elif format_type == "txt":
-            filepath = f"exports/solutions_{subreddit}_{timestamp}.txt"
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(f"SOLUTIONS EXCEPTIONNELLES - r/{subreddit}\n")
-                f.write(f"Générées le: {timestamp}\n\n")
-                for sol in solutions:
-                    f.write(f"--- SOLUTION #{sol['id']} ---\n")
-                    f.write(f"Type de douleur: {sol['pain_type']}\n")
-                    f.write(f"Auteur: {sol['author']}\n")
-                    f.write(f"Score: {sol['score']}\n")
-                    f.write(f"Solution: {sol['solution_text']}\n\n")
-        
-        else:  # CSV par défaut
-            filepath = f"exports/solutions_{subreddit}_{timestamp}.csv"
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write("ID,Pain Type,Author,Score,Solution\n")
-                for sol in solutions:
-                    f.write(f"{sol['id']},{sol['pain_type']},{sol['author']},{sol['score']},\"{sol['solution_text']}\"\n")
-        
-        return json.dumps({
-            "success": True,
-            "filepath": filepath,
-            "format": format_type,
-            "count": len(solutions),
-            "message": f"✅ Solutions exportées: {filepath}"
-        })
-        
-    except Exception as e:
-        return json.dumps({
-            "success": False,
-            "error": str(e)
-        })
+# @function_tool
+# def export_exceptional_solutions(subreddit: str, format_type: str = "csv") -> str:
+#     """
+#     Exporte les solutions exceptionnelles d'un subreddit
+#     (Exact de Version_00)
+#     
+#     Args:
+#         subreddit: Nom du subreddit
+#         format_type: Format d'export (csv, json, txt)
+#     
+#     Returns:
+#         Chaîne JSON avec le chemin du fichier exporté
+#     """
+#     try:
+#         # Récupérer les solutions
+#         solutions_data_json = get_stored_solutions(subreddit)
+#         solutions_data = json.loads(solutions_data_json)
+#         
+#         if not solutions_data["success"]:
+#             return solutions_data_json
+#         
+#         solutions = solutions_data["solutions"]
+#         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#         
+#         # Créer le dossier exports s'il n'existe pas
+#         Path("exports").mkdir(exist_ok=True)
+#         
+#         if format_type == "json":
+#             filepath = f"exports/solutions_{subreddit}_{timestamp}.json"
+#             with open(filepath, 'w', encoding='utf-8') as f:
+#                 json.dump(solutions, f, ensure_ascii=False, indent=2)
+#         
+#         elif format_type == "txt":
+#             filepath = f"exports/solutions_{subreddit}_{timestamp}.txt"
+#             with open(filepath, 'w', encoding='utf-8') as f:
+#                 f.write(f"SOLUTIONS EXCEPTIONNELLES - r/{subreddit}\n")
+#                 f.write(f"Générées le: {timestamp}\n\n")
+#                 for sol in solutions:
+#                     f.write(f"--- SOLUTION #{sol['id']} ---\n")
+#                     f.write(f"Type de douleur: {sol['pain_type']}\n")
+#                     f.write(f"Auteur: {sol['author']}\n")
+#                     f.write(f"Score: {sol['score']}\n")
+#                     f.write(f"Solution: {sol['solution_text']}\n\n")
+#         
+#         else:  # CSV par défaut
+#             filepath = f"exports/solutions_{subreddit}_{timestamp}.csv"
+#             with open(filepath, 'w', encoding='utf-8') as f:
+#                 f.write("ID,Pain Type,Author,Score,Solution\n")
+#                 for sol in solutions:
+#                     f.write(f"{sol['id']},{sol['pain_type']},{sol['author']},{sol['score']},\"{sol['solution_text']}\"\n")
+#         
+#         return json.dumps({
+#             "success": True,
+#             "filepath": filepath,
+#             "format": format_type,
+#             "message": f"✅ Solutions exportées: {filepath}"
+#         })
+#         
+#     except Exception as e:
+#         return json.dumps({
+#             "success": False,
+#             "error": str(e)
+#         })
 
+# @function_tool
+# def export_both_reports(analysis_data: Any, recommendations_data: Any, subreddit: str, format_type: str = "pdf") -> str:
+#     """
+#     Exporte à la fois le rapport final et les solutions exceptionnelles
+#     (Exact de Version_00)
+#     
+#     Args:
+#         analysis_data: Données d'analyse
+#         recommendations_data: Données de recommandations
+#         subreddit: Nom du subreddit
+#         format_type: Format d'export (pdf, json, csv)
+#     
+#     Returns:
+#         Chaîne JSON avec les chemins des fichiers exportés
+#     """
+#     try:
+#         # Exporter le rapport final
+#         report_result_json = export_final_report(analysis_data, recommendations_data, format_type)
+#         report_result = json.loads(report_result_json)
+#         
+#         # Exporter les solutions exceptionnelles
+#         solutions_result_json = export_exceptional_solutions(subreddit, format_type)
+#         solutions_result = json.loads(solutions_result_json)
+#         
+#         return json.dumps({
+#             "success": True,
+#             "report_export": report_result,
+#             "solutions_export": solutions_result,
+#             "message": "✅ Exports combinés terminés"
+#         })
+#         
+#     except Exception as e:
+#         return json.dumps({
+#             "success": False,
+#             "error": str(e)
+#         })
 
-@function_tool
-def export_both_reports(analysis_data: Any, recommendations_data: Any, subreddit: str, format_type: str = "pdf") -> str:
-    """
-    Exporte à la fois le rapport final et les solutions exceptionnelles
-    (Exact de Version_00)
-    
-    Args:
-        analysis_data: Données d'analyse
-        recommendations_data: Données de recommandations
-        subreddit: Nom du subreddit
-        format_type: Format d'export
-    
-    Returns:
-        Chaîne JSON avec les chemins des fichiers exportés
-    """
-    try:
-        # Exporter le rapport final
-        report_result_json = export_final_report(analysis_data, recommendations_data, format_type)
-        report_result = json.loads(report_result_json)
-        
-        # Exporter les solutions exceptionnelles
-        solutions_result_json = export_exceptional_solutions(subreddit, format_type)
-        solutions_result = json.loads(solutions_result_json)
-        
-        if report_result["success"] and solutions_result["success"]:
-            return json.dumps({
-                "success": True,
-                "report_file": report_result["filepath"],
-                "solutions_file": solutions_result["filepath"],
-                "message": "✅ Rapport final et solutions exportés"
-            })
-        else:
-            return json.dumps({
-                "success": False,
-                "error": f"Erreur rapport: {report_result.get('error', 'OK')}, Erreur solutions: {solutions_result.get('error', 'OK')}"
-            })
-            
-    except Exception as e:
-        return json.dumps({"success": False, "error": str(e)})
+# Fonctions d'export temporairement désactivées
+pass

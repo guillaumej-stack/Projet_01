@@ -46,6 +46,7 @@ export interface AnalysisResult {
 export interface ChatResponse {
   success: boolean
   response: string
+  session_id?: string
   analysis_results?: {
     subreddit: string
     subscribers: number
@@ -100,9 +101,26 @@ export const redditAPI = {
   },
 
   // Chat avec l'assistant
-  async sendChatMessage(message: string): Promise<ChatResponse> {
+  async sendChatMessage(message: string, sessionId?: string): Promise<ChatResponse> {
     const response: AxiosResponse<ChatResponse> = await apiClient.post('/chat', {
-      message: message
+      message: message,
+      session_id: sessionId || 'default'
+    })
+    return response.data
+  },
+
+  // Nettoyer l'historique de conversation
+  async clearChatHistory(sessionId?: string): Promise<any> {
+    const response = await apiClient.post('/chat/clear_history', {}, {
+      params: { session_id: sessionId || 'default' }
+    })
+    return response.data
+  },
+
+  // Récupérer l'historique de conversation
+  async getChatHistory(sessionId?: string): Promise<any> {
+    const response = await apiClient.get('/chat/history', {
+      params: { session_id: sessionId || 'default' }
     })
     return response.data
   },

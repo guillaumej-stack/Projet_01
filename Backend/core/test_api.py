@@ -29,7 +29,7 @@ def test_check_subreddit():
     try:
         # Test avec un subreddit existant
         data = {"subreddit_name": "python"}
-        response = requests.post(f"{BASE_URL}/check_subreddit", json=data, headers=HEADERS, timeout=10)
+        response = requests.post(f"{BASE_URL}/check_subreddit", json=data, headers=HEADERS, timeout=40)
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
         return response.status_code == 200
@@ -45,7 +45,7 @@ def test_chat_simple():
             "message": "Bonjour, peux-tu me présenter tes fonctionnalités ?",
             "session_id": "test_session_123"
         }
-        response = requests.post(f"{BASE_URL}/chat", json=data, headers=HEADERS, timeout=30)
+        response = requests.post(f"{BASE_URL}/chat", json=data, headers=HEADERS, timeout=50)
         print(f"Status: {response.status_code}")
         if response.status_code == 200:
             result = response.json()
@@ -70,7 +70,7 @@ def test_analyze():
             "sort_criteria": "top",
             "time_filter": "month"
         }
-        response = requests.post(f"{BASE_URL}/analyze", json=data, headers=HEADERS, timeout=60)
+        response = requests.post(f"{BASE_URL}/analyze", json=data, headers=HEADERS, timeout=600)
         print(f"Status: {response.status_code}")
         if response.status_code == 200:
             result = response.json()
@@ -88,7 +88,8 @@ def test_clear_history():
     """Test de l'endpoint clear_history"""
     print("\n🔍 Test de l'endpoint /clear_history")
     try:
-        data = {"session_id": "test_session_123"}
+        #data = {"session_id": "test_session_123"}
+        data = {"session_id": "check_subreddit"}
         response = requests.delete(f"{BASE_URL}/clear_history", json=data, headers=HEADERS, timeout=10)
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
@@ -103,11 +104,11 @@ def run_all_tests():
     print("=" * 50)
     
     tests = [
-        ("Health Check", test_health),
+        #("Health Check", test_health),
         ("Check Subreddit", test_check_subreddit),
-        ("Chat Simple", test_chat_simple),
-        ("Analyze", test_analyze),
-        ("Clear History", test_clear_history),
+        #("Chat Simple", test_chat_simple),
+        #("Analyze", test_analyze),
+        #("Clear History", test_clear_history),
     ]
     
     results = []

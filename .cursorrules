@@ -132,3 +132,5 @@ Follow PEP 8 rigorously, letting Ruff auto-format and lint your code.
 Réponds toujours en français
 Tu suis toujours l’ensemble du projet_01 pour répondre de manière cohérente. 
 Quand je demande quelque chose et que je suis dans un notebook, tu me réponds en me montrant le code que tu mettrais dans les cellules. 
+
+J'utilise PowerShell.
