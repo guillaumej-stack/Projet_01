@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { sessionManager } from './session'
+import { getSessionId } from './utils/session'
 
 export interface Message {
   id: string
@@ -24,7 +24,6 @@ interface ChatStore {
   setTyping: (isTyping: boolean) => void
   clearMessages: () => void
   setSessionId: (sessionId: string) => void
-  initializeFromSession: () => void
 }
 
 interface AnalysisStore {
@@ -34,13 +33,12 @@ interface AnalysisStore {
   setAnalysisResults: (results: any) => void
   setRecommendations: (recommendations: any) => void
   reset: () => void
-  initializeFromSession: () => void
 }
 
-export const useChatStore = create<ChatStore>((set, get) => ({
+export const useChatStore = create<ChatStore>((set) => ({
   messages: [],
   isTyping: false,
-  sessionId: sessionManager.getSessionId(), // Utiliser l'ID de session généré
+  sessionId: getSessionId(), // Généré à chaque chargement
   
   addMessage: (message) => {
     const newMessage = {
@@ -49,44 +47,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       timestamp: new Date(),
     }
     
-    set((state) => {
-      const updatedMessages = [...state.messages, newMessage]
-      // Sauvegarder dans sessionStorage
-      sessionManager.saveMessages(updatedMessages)
-      return { messages: updatedMessages }
-    })
+    set((state) => ({
+      messages: [...state.messages, newMessage]
+    }))
   },
   
   setTyping: (isTyping) => set({ isTyping }),
   
-  clearMessages: () => {
-    set({ messages: [] })
-    // Effacer aussi de sessionStorage
-    sessionManager.saveMessages([])
-  },
+  clearMessages: () => set({ messages: [] }),
   
-  setSessionId: (sessionId) => set({ sessionId }),
-  
-  initializeFromSession: () => {
-    // Charger les messages depuis sessionStorage au démarrage
-    const savedMessages = sessionManager.getMessages()
-    if (savedMessages.length > 0) {
-      // Reconstituer les dates des messages
-      const messagesWithDates = savedMessages.map(msg => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp)
-      }))
-      set({ 
-        messages: messagesWithDates,
-        sessionId: sessionManager.getSessionId()
-      })
-    } else {
-      set({ sessionId: sessionManager.getSessionId() })
-    }
-  }
+  setSessionId: (sessionId) => set({ sessionId })
 }))
 
-export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
+export const useAnalysisStore = create<AnalysisStore>((set) => ({
   state: {
     subreddit: '',
     isAnalyzing: false,
@@ -108,8 +81,6 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     set((state) => ({
       state: { ...state.state, analysisResults },
     }))
-    // Sauvegarder dans sessionStorage
-    sessionManager.saveAnalysisResults(analysisResults)
   },
   
   setRecommendations: (recommendations) =>
@@ -126,17 +97,5 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
         recommendations: null,
       },
     })
-    // Effacer de sessionStorage
-    sessionManager.saveAnalysisResults(null)
-  },
-  
-  initializeFromSession: () => {
-    // Charger les résultats d'analyse depuis sessionStorage
-    const savedResults = sessionManager.getAnalysisResults()
-    if (savedResults) {
-      set((state) => ({
-        state: { ...state.state, analysisResults: savedResults }
-      }))
-    }
   }
 }))

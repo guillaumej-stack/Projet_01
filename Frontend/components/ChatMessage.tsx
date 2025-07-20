@@ -1,6 +1,6 @@
 import { Message } from '@/lib/store'
 import { motion } from 'framer-motion'
-import { UserIcon, CpuChipIcon } from '@heroicons/react/24/outline'
+import { UserIcon, WrenchIcon, FaceSmileIcon } from '@heroicons/react/24/outline'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -20,8 +20,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     >
       {!isUser && (
         <div className="flex-shrink-0">
-          <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-            <CpuChipIcon className="w-5 h-5 text-primary-600" />
+          <div className="w-8 h-8 bg-[#DAA520] rounded-full flex items-center justify-center">
+            <WrenchIcon className="w-5 h-5 text-black" />
           </div>
         </div>
       )}
@@ -35,15 +35,15 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           <div className="flex items-start gap-2">
             {isUser && (
               <div className="flex-shrink-0">
-                <div className="w-6 h-6 bg-primary-600 rounded-full flex items-center justify-center">
-                  <UserIcon className="w-4 h-4 text-white" />
+                <div className="w-6 h-6 bg-[#A0522D] rounded-full flex items-center justify-center">
+                  <FaceSmileIcon className="w-4 h-4 text-white" />
                 </div>
               </div>
             )}
             
             <div className="flex-1">
-              <div className="text-sm font-medium mb-1">
-                {isUser ? 'Vous' : 'Assistant Reddit'}
+              <div className={`text-sm font-medium mb-1 ${isUser ? 'text-[#8B4513]' : 'text-[#DAA520]'}`}>
+                {isUser ? 'Vous' : 'Reddit Golddigger'}
               </div>
               
               {/* Contenu avec support Markdown */}
@@ -92,7 +92,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                 </ReactMarkdown>
               </div>
               
-              <div className="text-xs text-gray-500 mt-2">
+              <div className={`text-xs mt-2 ${isUser ? 'text-[#A0522D]' : 'text-[#8B4513]'}`}>
                 {message.timestamp.toLocaleTimeString('fr-FR', {
                   hour: '2-digit',
                   minute: '2-digit',

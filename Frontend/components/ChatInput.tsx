@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { PaperAirplaneIcon } from '@heroicons/react/24/outline'
+import { SparklesIcon } from '@heroicons/react/24/outline'
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void
@@ -39,7 +39,7 @@ export default function ChatInput({
   }, [message])
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+    <form onSubmit={handleSubmit} className="flex gap-2 items-center">
       <div className="flex-1 relative">
         <textarea
           ref={textareaRef}
@@ -56,9 +56,9 @@ export default function ChatInput({
       <button
         type="submit"
         disabled={!message.trim() || disabled}
-        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed p-3"
+        className="bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed p-3"
       >
-        <PaperAirplaneIcon className="w-5 h-5" />
+        <SparklesIcon className="w-5 h-5" />
       </button>
     </form>
   )
