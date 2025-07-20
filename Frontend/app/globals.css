@@ -56,4 +56,34 @@
   .loading-dots span:nth-child(3) {
     animation-delay: 0.4s;
   }
+  
+  /* Styles pour les sliders */
+  .slider::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 bg-amber-500 rounded-full cursor-pointer;
+  }
+  
+  .slider::-moz-range-thumb {
+    @apply appearance-none w-5 h-5 bg-amber-500 rounded-full cursor-pointer border-0;
+  }
+  
+  .slider::-webkit-slider-track {
+    @apply bg-amber-200 rounded-lg;
+  }
+  
+  .slider::-moz-range-track {
+    @apply bg-amber-200 rounded-lg;
+  }
+  
+  /* Styles pour les boutons radio */
+  input[type="radio"] {
+    @apply accent-amber-600;
+  }
+  
+  input[type="radio"]:checked {
+    @apply bg-amber-600 border-amber-600;
+  }
+  
+  input[type="radio"]:focus {
+    @apply ring-amber-500 ring-2 ring-offset-2;
+  }
 } 

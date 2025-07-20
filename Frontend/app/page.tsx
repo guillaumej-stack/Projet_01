@@ -5,7 +5,7 @@ import { useChatStore, useAnalysisStore } from '@/lib/store'
 import { redditAPI } from '@/lib/api'
 import ChatMessage from '@/components/ChatMessage'
 import ChatInput from '@/components/ChatInput'
-
+import AnalysisForm from '@/components/AnalysisForm'
 
 import { 
   BanknotesIcon,
@@ -18,6 +18,7 @@ export default function Home() {
   const { messages, addMessage, setTyping, clearMessages, sessionId, setSessionId } = useChatStore()
   const { state, setAnalysisResults, setRecommendations } = useAnalysisStore()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isAnalysisRunning, setIsAnalysisRunning] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const welcomeMessageAdded = useRef(false)
 
@@ -120,7 +121,7 @@ const handleSendMessage = async (content: string) => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Menu Section - Gauche */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
@@ -136,16 +137,19 @@ const handleSendMessage = async (content: string) => {
                     Nouveau chat
                   </button>
                   
-
-                  
+                  {/* Formulaire d'analyse */}
+                  <AnalysisForm 
+                    onAnalysisStart={() => setIsAnalysisRunning(true)}
+                    onAnalysisComplete={() => setIsAnalysisRunning(false)}
+                  />
 
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Chat Section - Droite (3/4) */}
-          <div className="lg:col-span-3">
+          {/* Chat Section - Droite (2/3) */}
+          <div className="lg:col-span-2">
             <div className="card flex-1 flex flex-col">
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((message) => (
@@ -160,7 +164,7 @@ const handleSendMessage = async (content: string) => {
               <div className="p-4 border-t border-gray-200">
                 <ChatInput
                   onSendMessage={handleSendMessage}
-                  disabled={isProcessing}
+                  disabled={isProcessing || isAnalysisRunning}
                   placeholder="Tapez votre message ou dites-moi quel subreddit analyser..."
                 />
               </div>

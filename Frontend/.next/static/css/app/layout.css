@@ -701,6 +701,56 @@ video {
 .loading-dots span:nth-child(3) {
     animation-delay: 0.4s;
   }
+/* Styles pour les sliders */
+.slider::-webkit-slider-thumb {
+  height: 1.25rem;
+  width: 1.25rem;
+  cursor: pointer;
+  -webkit-appearance: none;
+          appearance: none;
+  border-radius: 9999px;
+  --tw-bg-opacity: 1;
+  background-color: rgb(245 158 11 / var(--tw-bg-opacity, 1));
+}
+.slider::-moz-range-thumb {
+  height: 1.25rem;
+  width: 1.25rem;
+  cursor: pointer;
+  -moz-appearance: none;
+       appearance: none;
+  border-radius: 9999px;
+  border-width: 0px;
+  --tw-bg-opacity: 1;
+  background-color: rgb(245 158 11 / var(--tw-bg-opacity, 1));
+}
+.slider::-webkit-slider-track {
+  border-radius: 0.5rem;
+  --tw-bg-opacity: 1;
+  background-color: rgb(253 230 138 / var(--tw-bg-opacity, 1));
+}
+.slider::-moz-range-track {
+  border-radius: 0.5rem;
+  --tw-bg-opacity: 1;
+  background-color: rgb(253 230 138 / var(--tw-bg-opacity, 1));
+}
+/* Styles pour les boutons radio */
+input[type="radio"] {
+  accent-color: #d97706;
+}
+input[type="radio"]:checked {
+  --tw-border-opacity: 1;
+  border-color: rgb(217 119 6 / var(--tw-border-opacity, 1));
+  --tw-bg-opacity: 1;
+  background-color: rgb(217 119 6 / var(--tw-bg-opacity, 1));
+}
+input[type="radio"]:focus {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-opacity: 1;
+  --tw-ring-color: rgb(245 158 11 / var(--tw-ring-opacity, 1));
+  --tw-ring-offset-width: 2px;
+}
 .relative {
   position: relative;
 }
@@ -733,6 +783,9 @@ video {
 .mb-4 {
   margin-bottom: 1rem;
 }
+.mr-2 {
+  margin-right: 0.5rem;
+}
 .mt-1 {
   margin-top: 0.25rem;
 }
@@ -741,6 +794,9 @@ video {
 }
 .mt-4 {
   margin-top: 1rem;
+}
+.block {
+  display: block;
 }
 .flex {
   display: flex;
@@ -754,6 +810,9 @@ video {
 .h-16 {
   height: 4rem;
 }
+.h-2 {
+  height: 0.5rem;
+}
 .h-4 {
   height: 1rem;
 }
@@ -765,9 +824,6 @@ video {
 }
 .h-8 {
   height: 2rem;
-}
-.h-\[600px\] {
-  height: 600px;
 }
 .h-screen {
   height: 100vh;
@@ -814,6 +870,9 @@ video {
 .flex-shrink-0 {
   flex-shrink: 0;
 }
+.cursor-pointer {
+  cursor: pointer;
+}
 .resize-none {
   resize: none;
 }
@@ -825,6 +884,11 @@ video {
 }
 .list-disc {
   list-style-type: disc;
+}
+.appearance-none {
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
 }
 .grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -856,8 +920,13 @@ video {
 .gap-3 {
   gap: 0.75rem;
 }
-.gap-8 {
-  gap: 2rem;
+.gap-6 {
+  gap: 1.5rem;
+}
+.space-y-2 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
 }
 .space-y-3 > :not([hidden]) ~ :not([hidden]) {
   --tw-space-y-reverse: 0;
@@ -907,6 +976,10 @@ video {
 .border-t {
   border-top-width: 1px;
 }
+.border-amber-300 {
+  --tw-border-opacity: 1;
+  border-color: rgb(252 211 77 / var(--tw-border-opacity, 1));
+}
 .border-amber-400 {
   --tw-border-opacity: 1;
   border-color: rgb(251 191 36 / var(--tw-border-opacity, 1));
@@ -942,6 +1015,10 @@ video {
 .bg-\[\#DAA520\] {
   --tw-bg-opacity: 1;
   background-color: rgb(218 165 32 / var(--tw-bg-opacity, 1));
+}
+.bg-amber-200 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(253 230 138 / var(--tw-bg-opacity, 1));
 }
 .bg-amber-50 {
   --tw-bg-opacity: 1;
@@ -1002,10 +1079,6 @@ video {
 .py-3 {
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
-}
-.py-8 {
-  padding-top: 2rem;
-  padding-bottom: 2rem;
 }
 .py-4 {
   padding-top: 1rem;
@@ -1072,6 +1145,10 @@ video {
 .text-\[\#DAA520\] {
   --tw-text-opacity: 1;
   color: rgb(218 165 32 / var(--tw-text-opacity, 1));
+}
+.text-amber-600 {
+  --tw-text-opacity: 1;
+  color: rgb(217 119 6 / var(--tw-text-opacity, 1));
 }
 .text-black {
   --tw-text-opacity: 1;
@@ -1197,12 +1274,12 @@ video {
     grid-column: span 1 / span 1;
   }
 
-  .lg\:col-span-3 {
-    grid-column: span 3 / span 3;
+  .lg\:col-span-2 {
+    grid-column: span 2 / span 2;
   }
 
-  .lg\:grid-cols-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .lg\:px-8 {
