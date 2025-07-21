@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { ChartBarIcon } from '@heroicons/react/24/outline'
 import { redditAPI } from '@/lib/api'
 import { useChatStore } from '@/lib/store'
 import toast from 'react-hot-toast'
+
+console.log('🔍 [DEBUG] AnalysisForm importé')
 
 interface AnalysisFormProps {
   onAnalysisStart?: () => void
@@ -9,7 +12,9 @@ interface AnalysisFormProps {
 }
 
 export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: AnalysisFormProps) {
-  const { addMessage, sessionId, setTyping } = useChatStore()
+  console.log('🔍 [DEBUG] AnalysisForm rendu')
+  const { addMessage, sessionId, setTyping, messages } = useChatStore()
+  console.log('🔍 [DEBUG] Store récupéré, addMessage:', typeof addMessage)
   
   // États du formulaire
   const [subreddit, setSubreddit] = useState('')
@@ -25,8 +30,8 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
     { value: 'hot', label: 'Hot' },
     { value: 'new', label: 'New' },
     { value: 'rising', label: 'Rising' },
-    { value: 'controversial', label: 'Controversial' }
-  ]
+    { value: 'best', label: 'Best' }
+]
 
   // Périodes disponibles
   const timeOptions = [
@@ -41,6 +46,8 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    console.log('🔍 [DEBUG] Formulaire soumis')
+    
     if (!subreddit.trim()) {
       toast.error('Veuillez entrer un nom de subreddit')
       return
@@ -48,6 +55,8 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
 
     // Nettoyer le nom du subreddit (enlever r/ si présent)
     const cleanSubreddit = subreddit.replace(/^r\//, '').trim()
+    
+    console.log('🔍 [DEBUG] Subreddit nettoyé:', cleanSubreddit)
     
     if (!cleanSubreddit) {
       toast.error('Nom de subreddit invalide')
@@ -64,13 +73,14 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
       
       // Ajouter le message de l'utilisateur dans le chat
       addMessage({ role: 'user', content: analysisMessage })
-      
       // Envoyer via le système de chat existant (agent 0)
       const response = await redditAPI.sendChatMessage(analysisMessage, sessionId)
 
+      console.log('🔍 [DEBUG] Réponse API:', response)
+
       if (response.success) {
-        // L'agent 0 répondra dans le chat
-        toast.success('✅ Demande d\'analyse envoyée !')
+        // Ajouter la réponse de l'Agent 0 au chat
+        addMessage({ role: 'assistant', content: response.response })
         // Réinitialiser le formulaire
         setSubreddit('')
         setNumPosts(5)
@@ -101,7 +111,7 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Input Subreddit */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block text-sm font-medium mb-2 ${isLoading ? 'text-gray-400' : 'text-gray-700'}`}>
               Subreddit
             </label>
             <input
@@ -109,15 +119,16 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
               value={subreddit}
               onChange={(e) => setSubreddit(e.target.value)}
               placeholder="r/subreddit"
-              className="input-field"
+              className={`input-field ${isLoading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
               required
+              disabled={isLoading}
             />
           </div>
 
           {/* Slider Nombre de posts */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre de posts: {numPosts}
+          <div className="slider-with-markers">
+            <label className={`block text-sm font-medium mb-2 ${isLoading ? 'text-gray-400' : 'text-gray-700'}`}>
+              Nombre de posts : {numPosts}
             </label>
             <input
               type="range"
@@ -125,18 +136,19 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
               max="50"
               value={numPosts}
               onChange={(e) => setNumPosts(parseInt(e.target.value))}
-              className="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer slider"
+              className={`w-full h-2 rounded-lg appearance-none slider ${isLoading ? 'bg-gray-200 cursor-not-allowed' : 'bg-amber-200 cursor-pointer'}`}
+              disabled={isLoading}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className={`flex justify-between text-xs mt-1 ${isLoading ? 'text-gray-400' : 'text-gray-500'}`}>
               <span>5</span>
               <span>50</span>
             </div>
           </div>
 
           {/* Slider Commentaires par post */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Commentaires par post: {commentsPerPost}
+          <div className="slider-with-markers">
+            <label className={`block text-sm font-medium mb-2 ${isLoading ? 'text-gray-400' : 'text-gray-700'}`}>
+              Commentaires par post : {commentsPerPost}
             </label>
             <input
               type="range"
@@ -144,9 +156,10 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
               max="50"
               value={commentsPerPost}
               onChange={(e) => setCommentsPerPost(parseInt(e.target.value))}
-              className="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer slider"
+              className={`w-full h-2 rounded-lg appearance-none slider ${isLoading ? 'bg-gray-200 cursor-not-allowed' : 'bg-amber-200 cursor-pointer'}`}
+              disabled={isLoading}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className={`flex justify-between text-xs mt-1 ${isLoading ? 'text-gray-400' : 'text-gray-500'}`}>
               <span>5</span>
               <span>50</span>
             </div>
@@ -154,35 +167,33 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
 
           {/* Critères */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block text-sm font-medium mb-2 ${isLoading ? 'text-gray-400' : 'text-gray-700'}`}>
               Critères
             </label>
-            <div className="space-y-2">
+            <select
+              value={selectedCriteria}
+              onChange={(e) => setSelectedCriteria(e.target.value)}
+              className={`input-field ${isLoading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
+              disabled={isLoading}
+            >
               {criteriaOptions.map((criteria) => (
-                <label key={criteria.value} className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="criteria"
-                    value={criteria.value}
-                    checked={selectedCriteria === criteria.value}
-                    onChange={(e) => setSelectedCriteria(e.target.value)}
-                    className="mr-2 text-amber-600 focus:ring-amber-500 border-amber-300"
-                  />
-                  <span className="text-sm text-gray-700">• {criteria.label}</span>
-                </label>
+                <option key={criteria.value} value={criteria.value}>
+                  {criteria.label}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           {/* Menu déroulant Période */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block text-sm font-medium mb-2 ${isLoading ? 'text-gray-400' : 'text-gray-700'}`}>
               Période
             </label>
             <select
               value={timeFilter}
               onChange={(e) => setTimeFilter(e.target.value)}
-              className="input-field"
+              className={`input-field ${isLoading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
+              disabled={isLoading}
             >
               {timeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -196,9 +207,21 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
           <button
             type="submit"
             disabled={isLoading || !subreddit.trim()}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+            onClick={() => console.log('🔍 [DEBUG] Bouton cliqué')}
           >
-            {isLoading ? 'Envoi en cours...' : 'Demander une analyse'}
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <ChartBarIcon className="w-4 h-4" />
+                Analyse en cours...
+              </>
+            ) : (
+              <>
+                <ChartBarIcon className="w-4 h-4" />
+                Demander une analyse
+              </>
+            )}
           </button>
         </form>
       </div>

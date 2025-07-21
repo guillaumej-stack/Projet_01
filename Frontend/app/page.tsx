@@ -54,8 +54,7 @@ Quel subreddit souhaitez-vous analyser ?`
     // Générer un nouveau session_id
     const newSessionId = crypto.randomUUID()
     setSessionId(newSessionId)
-    
-    toast.success('Nouveau chat ouvert')
+
   }
 
 

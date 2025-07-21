@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from functions import supabase
 
 import praw
 from openai import OpenAI
@@ -344,6 +345,22 @@ def get_stored_solutions(subreddit: str = None) -> str:
         }
         return json.dumps(error_result)
 
+
+
+@function_tool
+def send_message_to_user(message: str, session_id: str = "default") -> str:
+    """
+    Enregistre un message assistant dans l'historique de conversation pour affichage immédiat dans le chat.
+    """
+    try:
+        supabase.table("conversation_history").insert({
+            "session_id": session_id,
+            "user_message": None,
+            "agent_response": message
+        }).execute()
+        return f"Message '{message}' envoyé à l'utilisateur"
+    except Exception as e:
+        return f"Erreur lors de l'envoi du message à l'utilisateur: {e}"
 
 # class FlexibleDict(BaseModel):
 #     class Config:

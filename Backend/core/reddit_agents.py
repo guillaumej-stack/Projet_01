@@ -1,12 +1,13 @@
 from agents import Agent, WebSearchTool, Runner, trace
 from functions import supabase
-from prompts import prompt_0, prompt_1, prompt_2, prompt_3, prompt_4
+from prompts import prompt_0, prompt_1, prompt_2, prompt_3, prompt_4, prompt_5
 from functions import (
     check_subreddit_exists,
     scrape_subreddit_posts,
     calculate_pain_score,
     store_exceptional_solution,
-    get_stored_solutions
+    get_stored_solutions,
+    send_message_to_user
 )
 
 # Agent 0 - RouterAgent
@@ -16,7 +17,8 @@ agent_0 = Agent(
     tools=[
         WebSearchTool(),
         check_subreddit_exists,
-        get_stored_solutions
+        get_stored_solutions,
+        send_message_to_user
     ], 
     model="gpt-4o-mini"
 )
@@ -51,10 +53,20 @@ agent_4 = Agent(
     model="gpt-4o-mini"
 )
 
+agent_5 = Agent(
+    name="ReportGenerator",
+    instructions=prompt_5,
+    tools=[],
+    model="gpt-4o-mini"
+)
+
+
 # Convertir les agents en tools
 Scraper_tool = agent_2.as_tool(tool_name="scraper_tool", tool_description="scrape a subreddit")
 PainAnalysis_tool = agent_3.as_tool(tool_name="pain_analysis_tool", tool_description="analyze the pain of a subreddit")
 Recommendations_tool = agent_4.as_tool(tool_name="recommendations_tool", tool_description="generate recommendations")
+ReportGenerator_tool = agent_5.as_tool(tool_name="report_generator_tool", tool_description="generate final report from pain analysis and recommendations")
+
 
 
 # Agent 1 - WorkflowManager (avec les tools)
@@ -64,7 +76,8 @@ agent_1 = Agent(
     tools=[
         Scraper_tool,
         PainAnalysis_tool,
-        Recommendations_tool
+        Recommendations_tool,
+        ReportGenerator_tool
     ],
     model="gpt-4o-mini"
 )
@@ -84,13 +97,29 @@ async def run_chat(message: str, session_id: str = "default") -> dict:
     (Adapté Version_00 pour Supabase)
     """
     try:
+        print(f"🔍 [DEBUG] run_chat appelé avec message: {message}")
+        print(f"🔍 [DEBUG] session_id: {session_id}")
+        
         # Construire le contexte avec l'historique
         context = get_conversation_history(session_id)
         full_context = f"{context}\nHumain: {message}\nAssistant: "
         
+        print(f"🔍 [DEBUG] Contexte construit: {len(full_context)} caractères")
+        
         # Lancer l'agent principal
         with trace(f"chat_session_{session_id}"):
+            print(f"🔍 [DEBUG] Lancement de l'Agent 0...")
             result = await Runner.run(agent_0, full_context)
+            
+            print(f"🔍 [DEBUG] Agent 0 terminé")
+            print(f"🔍 [DEBUG] result.final_output: {result.final_output}")
+            print(f"🔍 [DEBUG] result.intermediate_steps: {len(result.intermediate_steps) if hasattr(result, 'intermediate_steps') else 'N/A'}")
+            
+            # Afficher les étapes intermédiaires si disponibles
+            if hasattr(result, 'intermediate_steps') and result.intermediate_steps:
+                print(f"🔍 [DEBUG] Étapes intermédiaires:")
+                for i, step in enumerate(result.intermediate_steps):
+                    print(f"  Étape {i}: {step}")
             
             # Sauvegarder dans l'historique
             save_to_history(session_id, message, result.final_output)
@@ -102,6 +131,7 @@ async def run_chat(message: str, session_id: str = "default") -> dict:
             }
             
     except Exception as e:
+        print(f"❌ [DEBUG] Erreur dans run_chat: {e}")
         return {
             "success": False,
             "error": str(e),
