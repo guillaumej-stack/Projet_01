@@ -6,8 +6,7 @@ from functions import (
     scrape_subreddit_posts,
     calculate_pain_score,
     store_exceptional_solution,
-    get_stored_solutions,
-    send_message_to_user
+    get_stored_solutions
 )
 
 # Agent 0 - RouterAgent
@@ -17,8 +16,7 @@ agent_0 = Agent(
     tools=[
         WebSearchTool(),
         check_subreddit_exists,
-        get_stored_solutions,
-        send_message_to_user
+        get_stored_solutions
     ], 
     model="gpt-4o-mini"
 )

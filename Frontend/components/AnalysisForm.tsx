@@ -73,6 +73,12 @@ export default function AnalysisForm({ onAnalysisStart, onAnalysisComplete }: An
       
       // Ajouter le message de l'utilisateur dans le chat
       addMessage({ role: 'user', content: analysisMessage })
+      // Attendre 1 seconde puis ajouter le message assistant intermédiaire
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      addMessage({
+        role: 'assistant',
+        content: "Votre analyse est en cours, je vous enverrai les résultats dès que possible."
+      })
       // Envoyer via le système de chat existant (agent 0)
       const response = await redditAPI.sendChatMessage(analysisMessage, sessionId)
 
