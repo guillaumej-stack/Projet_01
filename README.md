@@ -25,54 +25,61 @@ Un SaaS pour scraper les problèmes des utilisateurs Reddit et fournir des répo
 ## 🏗️ Architecture
 
 ```
-Projet_01/
-├── Backend/                 # API FastAPI
-│   ├── app/
-│   │   ├── scrapers/        # Scrapers Reddit
-│   │   ├── chatbot/         # Logique IA
-│   │   ├── api/             # Endpoints API
-│   │   └── models/          # Modèles de données
-│   ├── requirements.txt
-│   └── main.py
-├── Frontend/                # Next.js App
-│   ├── src/
-│   │   ├── components/      # Composants React
-│   │   ├── pages/           # Pages Next.js
-│   │   ├── hooks/           # Hooks personnalisés
-│   │   └── utils/           # Utilitaires
-│   ├── package.json
-│   └── next.config.js
-└── README.md
+Projet_Reddit/
+├── Backend/                 # API FastAPI, scripts, notebooks
+│   ├── core/               # Modules principaux (API, agents, prompts, etc.)
+│   ├── exports/            # Exports de données temporaires
+│   ├── temp/               # Fichiers temporaires
+│   ├── requirements.txt    # Dépendances Python
+│   ├── pyproject.toml      # (optionnel) Configurations avancées
+│   ├── start-backend.py    # Script de démarrage principal
+│   ├── start_server.py     # Script de démarrage serveur (dev)
+│   ├── start_production.py # Script de démarrage production
+│   ├── simple_chat.py      # Script de chat simple
+│   ├── debug.py            # Script de debug
+│   ├── Test_01.ipynb       # Notebook d'exploration
+│   ├── Version_00.ipynb    # Notebook d'exploration
+│   └── ...
+├── Frontend/               # Next.js App
+│   ├── app/                # Entrée principale (layout, pages)
+│   ├── components/         # Composants React
+│   ├── lib/                # Librairies utilitaires
+│   ├── env.example         # Exemple d'environnement
+│   ├── package.json        # Dépendances JS
+│   └── ...
+├── README.md
+├── GUIDE_LANCEMENT.md      # Guide de démarrage rapide
+└── deploy.sh               # Script de déploiement
 ```
 
 ## 🚀 Installation
 
 ### Prérequis
-- Python 3.8+
+- Python 3.10+
 - Node.js 18+
 - Compte Supabase
-- Redis (optionnel)
 - Comptes API : Reddit, OpenAI, Stripe
+- (Optionnel) Redis
 
 ### Configuration
 
 1. **Cloner le projet**
-```bash
+```powershell
 git clone <votre-repo>
-cd Projet_01
+cd Projet_Reddit
 ```
 
 2. **Configuration Backend**
-```bash
+```powershell
 cd Backend
-cp env.example .env
-# Éditer .env avec vos clés API
+# Copier et éditer vos variables d'environnement si besoin
+# (exemple : cp env.example .env)
 ```
 
 3. **Configuration Frontend**
-```bash
+```powershell
 cd Frontend
-cp .env.example .env.local
+cp env.example .env.local
 # Éditer .env.local avec vos clés API
 ```
 
@@ -107,46 +114,29 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 ### Installation des dépendances
 
 **Backend**
-```bash
+```powershell
 cd Backend
 python -m venv venv
-source venv/bin/activate  # ou `venv\Scripts\activate` sur Windows
+.\venv\Scripts\activate  # Pour Windows PowerShell
 pip install -r requirements.txt
 ```
 
 **Frontend**
-```bash
+```powershell
 cd Frontend
 npm install
 ```
 
-### Configuration Supabase
-
-1. **Créer un projet Supabase**
-   - Aller sur [supabase.com](https://supabase.com)
-   - Créer un nouveau projet
-   - Noter l'URL et les clés API
-
-2. **Configurer la base de données**
-   - Aller dans l'éditeur SQL de Supabase
-   - Exécuter le script `Backend/supabase_schema.sql`
-   - Cela créera toutes les tables et politiques de sécurité
-
-3. **Configurer l'authentification**
-   - Dans Supabase Dashboard > Authentication > Settings
-   - Configurer les providers souhaités (Email, Google, etc.)
-   - Activer "Enable email confirmations" si nécessaire
-
 ### Lancement
 
 **Backend**
-```bash
+```powershell
 cd Backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+python start-backend.py  # ou python start_server.py pour dev
 ```
 
 **Frontend**
-```bash
+```powershell
 cd Frontend
 npm run dev
 ```
@@ -154,7 +144,6 @@ npm run dev
 L'application sera disponible sur :
 - Frontend : http://localhost:3000
 - Backend API : http://localhost:8000
-- Documentation API : http://localhost:8000/docs
 
 ## 📊 Subreddits Ciblés
 
@@ -167,15 +156,10 @@ L'application sera disponible sur :
 - r/Entrepreneur - Problèmes entrepreneuriaux
 - r/SaaS - Problèmes SaaS
 
-## 💰 Plans SaaS
-
-- **Gratuit** : 10 requêtes/mois
-- **Pro** : 100 requêtes/mois - $9.99/mois
-- **Business** : Requêtes illimitées - $29.99/mois
 
 ## 🔧 Technologies
 
-- **Backend** : FastAPI, PRAW (Reddit API), OpenAI Agent SDK
+- **Backend** : FastAPI, PRAW (Reddit API), OpenAI, Python 3.10+
 - **Frontend** : Next.js, TypeScript, Tailwind CSS
 - **Base de données** : Supabase (PostgreSQL + Auth + Real-time)
 - **Paiement** : Stripe
@@ -205,83 +189,51 @@ curl -X POST http://localhost:8000/api/chatbot/chat \
 
 ### 3. API Endpoints principaux
 
-**Scraping**
-- `POST /api/scraping/scrape-all` - Scraper tous les subreddits
-- `POST /api/scraping/scrape-subreddit/{name}` - Scraper un subreddit
-- `GET /api/scraping/posts` - Récupérer les posts scrapés
-- `GET /api/scraping/posts/stats` - Statistiques des posts
+| Méthode | Chemin                | Description                                      | Corps attendu (JSON)                |
+|---------|----------------------|--------------------------------------------------|-------------------------------------|
+| GET     | `/`                  | Racine, infos API et endpoints                   | -                                   |
+| GET     | `/health`            | Vérification de l'état de l'API                  | -                                   |
+| POST    | `/chat`              | Chat avec l'agent IA principal                   | `{ "message": str, "session_id"?: str }` |
+| POST    | `/check_subreddit`   | Vérifie l'existence d'un subreddit               | `{ "subreddit_name": str }`        |
+| POST    | `/analyze`           | Analyse complète d'un subreddit                  | `{ "subreddit_name": str, "num_posts"?: int, "comments_limit"?: int, "sort_criteria"?: str, "time_filter"?: str }` |
+| POST    | `/export`            | Exporte les résultats d'analyse                  | `{ "format_type"?: str, "subreddit"?: str }` |
+| DELETE  | `/clear_history`     | Efface l'historique de conversation d'une session| `{ "session_id": str }`            |
 
-**Chatbot**
-- `POST /api/chatbot/chat` - Chat avec l'agent IA
-- `GET /api/chatbot/sessions` - Sessions de chat
-- `POST /api/chatbot/search-problems` - Recherche de problèmes
+#### Détail des schémas de requête
 
-**Authentification**
-- `POST /api/auth/register` - Inscription
-- `POST /api/auth/login` - Connexion
-- `GET /api/auth/me` - Profil utilisateur
-
-**Abonnement**
-- `GET /api/subscription/plans` - Plans disponibles
-- `POST /api/subscription/create-checkout-session` - Créer paiement
-- `GET /api/subscription/current` - Abonnement actuel
-
-## 🚀 Prochaines étapes
-
-### Phase 1 - MVP (2-3 semaines)
-- [ ] Finaliser l'authentification JWT
-- [ ] Implémenter le système de quotas
-- [ ] Créer l'interface de chat
-- [ ] Ajouter les pages de tarification
-- [ ] Intégrer Stripe
-
-### Phase 2 - Fonctionnalités avancées (4-6 semaines)
-- [ ] Dashboard utilisateur
-- [ ] Export de données
-- [ ] Notifications en temps réel
-- [ ] API publique
-- [ ] Analytics avancées
-
-### Phase 3 - Scale (6-8 semaines)
-- [ ] Cache Redis
-- [ ] Background jobs avec Celery
-- [ ] Monitoring et logging
-- [ ] Tests automatisés
-- [ ] CI/CD pipeline
-
-### Phase 4 - Déploiement (2-3 semaines)
-- [ ] Configuration production
-- [ ] SSL et sécurité
-- [ ] Monitoring production
-- [ ] Documentation utilisateur
-- [ ] Support client
-
-## 🔐 Sécurité
-
-- Authentification Supabase Auth (JWT sécurisé)
-- Row Level Security (RLS) sur toutes les tables
-- Validation des données avec Pydantic
-- Rate limiting sur les API
-- CORS configuré
-- Variables d'environnement sécurisées
-- Politiques de sécurité granulaires
-
-## 📈 Monitoring
-
-- Logs structurés
-- Métriques de performance
-- Alertes d'erreurs
-- Dashboard de santé
-- Analytics d'utilisation
-
-## 🤝 Contribution
-
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commit les changements (`git commit -m 'Add AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+- **/chat** :
+  ```json
+  {
+    "message": "Votre message ici",
+    "session_id": "id_session" // optionnel
+  }
+  ```
+- **/check_subreddit** :
+  ```json
+  {
+    "subreddit_name": "NomDuSubreddit"
+  }
+  ```
+- **/analyze** :
+  ```json
+  {
+    "subreddit_name": "NomDuSubreddit",
+    "num_posts": 5,                // optionnel
+    "comments_limit": 5,           // optionnel
+    "sort_criteria": "top",       // optionnel
+    "time_filter": "month"        // optionnel
+  }
+  ```
+- **/export** :
+  ```json
+  {
+    "format_type": "pdf",         // optionnel (pdf, csv...)
+    "subreddit": "NomDuSubreddit" // optionnel
+  }
+  ```
+- **/clear_history** :
+  ```json
+  {
+    "session_id": "id_session"
+  }
+  ```
