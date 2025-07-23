@@ -27,7 +27,7 @@ langgraph-checkpoint-sqlite==2.0.6
 langsmith==0.3.18
 lxml==5.3.1
 mcp-server-fetch==2025.1.17
-mcp[cli]==1.5.0
+mcp[cli]>=1.8.0,<2
 openai-agents==0.0.15
 playwright==1.51.0
 plotly==6.0.1
