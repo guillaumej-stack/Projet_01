@@ -19,4 +19,3 @@ openai-agents==0.0.15
 psutil==7.0.0
 pypdf==5.4.0
 pypdf2==3.0.1
-speedtest-cli==2.1.3supabase==2.17.0
