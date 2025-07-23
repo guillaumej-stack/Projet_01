@@ -10,7 +10,7 @@ from pydantic import BaseModel
 import praw
 from openai import OpenAI
 from supabase import create_client, Client
-from .agents import Agent, Runner, function_tool, trace, WebSearchTool
+from agents import Agent, Runner, function_tool, trace, WebSearchTool
 
 # Charger les variables d'environnement
 load_dotenv()

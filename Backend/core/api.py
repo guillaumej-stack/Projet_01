@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 # Charger les variables d'environnement
 load_dotenv()
 
-# Importer les agents (import relatif corrigé)
-from .reddit_agents import run_chat, clear_conversation_history
+# Importer les agents (import absolu pour Railway)
+from core.reddit_agents import run_chat, clear_conversation_history
 
 # Configuration FastAPI
 app = FastAPI(
