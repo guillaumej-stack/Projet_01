@@ -3,7 +3,7 @@
 Script de démarrage simple pour l'API Reddit Analysis SaaS
 """
 import uvicorn
-from api import app
+from .api import app
 
 if __name__ == "__main__":
     print("🚀 Démarrage du serveur API...")

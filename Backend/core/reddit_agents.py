@@ -1,7 +1,7 @@
-from agents import Agent, WebSearchTool, Runner, trace
-from functions import supabase
-from prompts import prompt_0, prompt_1, prompt_2, prompt_3, prompt_4, prompt_5
-from functions import (
+from .agents import Agent, WebSearchTool, Runner, trace
+from .functions import supabase
+from .prompts import prompt_0, prompt_1, prompt_2, prompt_3, prompt_4, prompt_5
+from .functions import (
     check_subreddit_exists,
     scrape_subreddit_posts,
     calculate_pain_score,
