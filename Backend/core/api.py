@@ -23,7 +23,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",  # Développement local
-        "https://redditanalysis-two.vercel.app",  # Ton domaine Vercel exact
+        "https://redditanalysis-guillaumes-projects-82031f97.vercel.app",  # Ton domaine Vercel exact
         "https://*.vercel.app",   # Tous les domaines Vercel (fallback)
         "https://*.railway.app",  # Tous les domaines Railway
     ],
